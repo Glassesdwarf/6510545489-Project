@@ -148,7 +148,8 @@ class Player(DragonElement):
     def create(self) -> None:
         turtle = RawTurtle(self.canvas)
         turtle.getscreen().tracer(False) # disable turtle's built-in animation
-        turtle.shape("turtle")
+        turtle.shape("triangle")
+        
         turtle.color("green")
         turtle.penup()
 
@@ -243,12 +244,8 @@ class Enemy(DragonElement):
         )
 
 
-# TODO
-# * Define your enemy classes
-# * Implement all methods required by the GameElement abstract class
-# * Define enemy's update logic in the update() method
-# * Check whether the player hits this enemy, then call the
-#   self.game.game_over_lose() method in the TurtleAdventureGame class.
+
+
 class DemoEnemy(Enemy):
     """
     Demo enemy
@@ -476,6 +473,7 @@ class ShooterEnemy(Enemy):
         self.y = random.randint(100, game.screen_height - 100)
         self.__tick = 0
         self.__fire_delay = fire_delay
+        
 
     def create(self):
         self.__id = self.canvas.create_oval(0, 0, 0, 0, fill=self.color)
@@ -487,7 +485,8 @@ class ShooterEnemy(Enemy):
 
         if self.hits_player():
             self.canvas.delete(self.__id)
-            
+            self.game.enemy_generator.create_enemy()
+            self.game.enemy_generator.dragon_hp -= 1
 
     def fire(self):
         player = self.game.player
@@ -520,7 +519,7 @@ class EnemyGenerator:
     def __init__(self, game: "KillTheDragon", level: int):
         self.__game: KillTheDragon= game
         self.__level: int = level
-
+        self.dragon_hp = 10
         # example
         self.__game.after(100, self.create_enemy)
 
@@ -542,53 +541,21 @@ class EnemyGenerator:
         """
         Create a new enemy, possibly based on the game level
         """
-        shoot_enemy = ShooterEnemy(self.__game, 20, "orange")
-        shoot_enemy.x = 300
-        shoot_enemy.y = 300
-        self.game.add_element(shoot_enemy)
+        
        
         
-        if self.level > 1:
-            camouflage_enemy = CamouflageEnemy(self.__game, 20, "purple")
-            camouflage_enemy.x = 400
-            camouflage_enemy.y = 500
-            self.game.add_element(camouflage_enemy)
-        if self.level > 2:
-            chasing_enemy2 = ChasingEnemy(self.__game, 20, "blue")
-            chasing_enemy2.x = 500
-            chasing_enemy2.y = 600
-            self.game.add_element(chasing_enemy2)
-        if self.level > 3:
-            fencing_enemy2 = FencingEnemy(self.__game, 20, "yellow")
-            fencing_enemy2.x = 600
-            fencing_enemy2.y = 700
-            self.game.add_element(fencing_enemy2)
-        if self.level > 4:
-            random_walk_enemy = RandomWalkEnemy(self.__game, 20, "green")
-            random_walk_enemy.x = 700
-            random_walk_enemy.y = 800
-            self.game.add_element(random_walk_enemy)
-            camouflage_enemy2 = CamouflageEnemy(self.__game, 20, "purple")
-            camouflage_enemy2.x = 800
-            camouflage_enemy2.y = 900
-            self.game.add_element(camouflage_enemy2)
-        if self.level > 5:
-            random_walk_enemy2 = RandomWalkEnemy(self.__game, 20, "green")
-            random_walk_enemy2.x = 800
-            random_walk_enemy2.y = 900
-            self.game.add_element(random_walk_enemy2)
-            camouflage_enemy3 = CamouflageEnemy(self.__game, 20, "purple")
-            camouflage_enemy3.x = 900
-            camouflage_enemy3.y = 1000
-            self.game.add_element(camouflage_enemy3)
-            random_walk_enemy3 = RandomWalkEnemy(self.__game, 20, "green")
-            random_walk_enemy3.x = 1000
-            random_walk_enemy3.y = 1100
-            self.game.add_element(random_walk_enemy3)
-            chase_enemy3 = ChasingEnemy(self.__game, 20, "blue")
-            chase_enemy3.x = 1100
-            chase_enemy3.y = 1200
-            self.game.add_element(chase_enemy3)
+        if self.dragon_hp > 5:
+            shoot_enemy = ShooterEnemy(self.__game, 20, "orange")
+            shoot_enemy.x = random.randint(1,600)
+            shoot_enemy.y = random.randint(1,600)
+            self.game.add_element(shoot_enemy)
+            
+        elif self.dragon_hp > 0:
+            shoot_enemy = ShooterEnemy(self.__game, 20, "orange")
+            shoot_enemy.x = 300
+            shoot_enemy.y = 300
+            self.game.add_element(shoot_enemy)
+        
 
 
 class KillTheDragon(Game): # pylint: disable=too-many-ancestors
