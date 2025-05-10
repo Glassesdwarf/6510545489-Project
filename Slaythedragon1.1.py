@@ -14,6 +14,7 @@ GRAY = (200, 200, 200)
 BLUE = (0, 0, 255)
 ORANGE = (255, 165, 0)  # Active fireball (fatal) color
 BLACK = (0, 0, 0)
+RED = (255,0,0)
 
 class Board:
     def __init__(self, surface):
@@ -37,10 +38,10 @@ class Player:
         if 0 <= new_x < BOARD_SIZE and 0 <= new_y < BOARD_SIZE:
             self.position = (new_x, new_y)
 
-    def draw(self, surface):
+    def draw(self, surface, color=BLUE):
         x, y = self.position
         rect = pygame.Rect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-        pygame.draw.rect(surface, BLUE, rect)
+        pygame.draw.rect(surface, color, rect)
 
 class Dragon:
     def __init__(self, position=(BOARD_SIZE-1, BOARD_SIZE-1), hp=10):
@@ -78,7 +79,7 @@ class Dragon:
     def draw(self, surface, font):
         x, y = self.position
         rect = pygame.Rect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-        pygame.draw.rect(surface, ORANGE, rect)
+        pygame.draw.rect(surface, RED, rect)
         hp_text = font.render(str(self.hp), True, WHITE)
         text_rect = hp_text.get_rect(center=rect.center)
         surface.blit(hp_text, text_rect)
@@ -111,14 +112,30 @@ class Fireball:
         pygame.draw.rect(surface, ORANGE, rect)
 
 class FireballRandom:
-    """Randomly appearing fireball."""
+    """Randomly appearing fireball with a limited lifetime."""
+    def __init__(self):
+        self.position = (random.randint(0, BOARD_SIZE - 1), random.randint(0, BOARD_SIZE - 1))
+        self.lifetime = random.randint(10, 30)  # Fireball lasts 10-30 frames
+
+    def update(self):
+        self.lifetime -= 1
+        return self.lifetime > 0  # Returns True if still alive
+
+    def draw(self, surface):
+        x, y = self.position
+        rect = pygame.Rect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+        pygame.draw.rect(surface, ORANGE, rect)
+class PowerUp:
     def __init__(self):
         self.position = (random.randint(0, BOARD_SIZE - 1), random.randint(0, BOARD_SIZE - 1))
 
     def draw(self, surface):
         x, y = self.position
         rect = pygame.Rect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-        pygame.draw.rect(surface, ORANGE, rect)
+        pygame.draw.rect(surface, (0, 255, 0), rect)  # Green color
+
+
+
 
 class Game:
     def __init__(self):
@@ -131,10 +148,87 @@ class Game:
         self.player = Player(position=(0, 0))
         self.dragon = Dragon(position=(random.randint(0, BOARD_SIZE - 1),
                                         random.randint(0, BOARD_SIZE - 1)))
+        self.final_time = []
         self.fireballs = []
         self.fireball_randoms = []
         self.game_over = False
         self.win = False
+        self.start_time = pygame.time.get_ticks()  # record the starting time
+
+        self.timer_running = True  # Timer is running at the start
+        self.move_count = 0
+        self.powerups_collected = 0
+
+  
+     
+       
+        self.powerup = None
+        self.invincible = False
+        self.invincible_timer = 0
+        self.normal_fps = FPS
+        self.fast_fps = 20
+        self.score = 5000
+        self.powerup_spawn_time = pygame.time.get_ticks()  # track last spawn time
+
+        self.show_intro = True
+    
+    def introduction_screen(self):
+        self.surface.fill(WHITE)
+        title_text = self.font.render("Slay the Dragon!", True, BLACK)
+        title_rect = title_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 150))
+        self.surface.blit(title_text, title_rect)
+
+        instructions = [
+            "Use Arrow Keys to move your player (blue square).",
+            "Touch the dragon (orange square) to deal damage.",
+            "Avoid fireballs (orange squares) — instant death.",
+            "Collect green power-ups for 5 seconds of invincibility.",
+            "During invincibility, player flashes colors.",
+            "Win by reducing dragon's HP to 0!",
+            "",
+            "Click 'Start Game' to begin."
+        ]
+
+        for i, line in enumerate(instructions):
+            line_text = self.font.render(line, True, BLACK)
+            line_rect = line_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 100 + i * 30))
+            self.surface.blit(line_text, line_rect)
+
+        # Draw Start Button
+        self.start_button = pygame.Rect(WIDTH // 2 - 100, HEIGHT // 2 + 180, 200, 50)
+        pygame.draw.rect(self.surface, (0, 200, 0), self.start_button)
+        start_text = self.font.render("Start Game", True, WHITE)
+        start_rect = start_text.get_rect(center=self.start_button.center)
+        self.surface.blit(start_text, start_rect)
+
+        pygame.display.flip()
+
+    
+    def update_fireballs(self):
+        new_fireballs = []
+        for fireball in self.fireballs:
+            if fireball.move():
+                new_fireballs.append(fireball)
+            if fireball.position == self.player.position and not self.invincible:
+                self.game_over = True
+                self.win = False
+                print("Player hit by fireball!")
+
+        self.fireballs = new_fireballs
+
+        # Update random fireballs
+        new_randoms = []
+        for fireball in self.fireball_randoms:
+            if fireball.position == self.player.position and not self.invincible:
+                self.game_over = True
+                self.win = False
+                print("Player hit by random fireball!")
+            elif fireball.update():
+                new_randoms.append(fireball)
+
+        self.fireball_randoms = new_randoms
+
+
 
     def handle_events(self):
         dx, dy = 0, 0
@@ -142,36 +236,31 @@ class Game:
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
                     dy = -1
+                    self.move_count += 1
                 elif event.key == pygame.K_DOWN:
                     dy = 1
+                    self.move_count += 1
                 elif event.key == pygame.K_LEFT:
                     dx = -1
+                    self.move_count += 1
                 elif event.key == pygame.K_RIGHT:
                     dx = 1
+                    self.move_count += 1
+            
+            # Detect Try Again button click
+            if event.type == pygame.MOUSEBUTTONDOWN and self.game_over:
+                mouse_x, mouse_y = pygame.mouse.get_pos()
+                if (WIDTH // 2 - 100 <= mouse_x <= WIDTH // 2 + 100 and
+                    HEIGHT // 2 + 80 <= mouse_y <= HEIGHT // 2 + 130):
+                    self.restart_game()
+
         if dx or dy:
             self.player.move(dx, dy)
 
-    def update_fireballs(self):
-        new_fireballs = []
-        for fireball in self.fireballs:
-            if fireball.move():
-                new_fireballs.append(fireball)
-
-            if fireball.position == self.player.position:
-                self.game_over = True
-                self.win = False
-                print("Player hit by fireball!")
-
-        self.fireballs = new_fireballs
-
-        for fireball in self.fireball_randoms:
-            if fireball.position == self.player.position:
-                self.game_over = True
-                self.win = False
-                print("Player hit by random fireball!")
 
     def update_game(self):
         if self.player.position == self.dragon.position:
@@ -181,45 +270,177 @@ class Game:
                 self.game_over = True
                 self.win = True
 
-        self.dragon.update_cooldown()
 
+        self.dragon.update_cooldown()
         self.fireballs += self.dragon.shoot_fireballs()
         self.fireball_randoms += self.dragon.spawn_fireballs()
 
         self.update_fireballs()
 
+        # Check power-up pickup
+        if self.powerup and self.player.position == self.powerup.position:
+            print("Power-up collected!")
+            self.invincible = True
+            self.invincible_timer = pygame.time.get_ticks()  # current time in ms
+            self.clock.tick(self.fast_fps)  # temporarily faster FPS
+            self.score = max(0, self.score - 500)
+            self.powerup = None
+            self.powerups_collected += 1
+        # Handle invincibility duration
+        if self.invincible:
+            if pygame.time.get_ticks() - self.invincible_timer >= 5000:
+                self.invincible = False
+                print("Invincibility ended.")
+                self.clock.tick(self.normal_fps)
+
+        # Randomly spawn a powerup (1 in 300 chance per tick)
+        if not self.powerup and random.randint(1, 300) == 1:
+            self.powerup = PowerUp()
+
+        self.score -= 1  # Increase score per tick
+
+        # Spawn a power-up every 20 seconds
+        current_time = pygame.time.get_ticks()
+        if not self.powerup and current_time - self.powerup_spawn_time >= 20000:
+            self.powerup = PowerUp()
+            self.powerup_spawn_time = current_time
+            print("Power-up spawned!")
+
+
+
     def draw_game(self):
         self.board.draw_grid()
-        self.player.draw(self.surface)
+
+        # Player color logic
+        if self.invincible:
+            player_color = (
+                random.randint(0, 255),
+                random.randint(0, 255),
+                random.randint(0, 255)
+            )
+        else:
+            player_color = BLUE
+
+        self.player.draw(self.surface, player_color)
+
         if self.dragon.hp > 0:
             self.dragon.draw(self.surface, self.font)
         for fireball in self.fireballs:
             fireball.draw(self.surface)
         for fireball in self.fireball_randoms:
             fireball.draw(self.surface)
+
+        # Draw power-up if exists
+        if self.powerup:
+            self.powerup.draw(self.surface)
+
+        # Draw score
+        score_text = self.font.render(f"Score: {self.score}", True, BLACK)
+        self.surface.blit(score_text, (5, 5))
+
+        # Show Invincible status
+        if self.invincible:
+            inv_text = self.font.render("INVINCIBLE!", True, (255, 0, 0))
+            self.surface.blit(inv_text, (5, 35))
+
+        pygame.display.flip()
+        # Draw timer
+        elapsed_time = (pygame.time.get_ticks() - self.start_time) // 1000  # in seconds
+        timer_text = self.font.render(f"Time: {elapsed_time}s", True, BLACK)
+        self.surface.blit(timer_text, (5, 65))
+
+
+
+    def display_message(self, message, elapsed_time=None, score=None , powerup = None , movecount = None):
+        self.surface.fill(WHITE)
+        text = self.font.render(message, True, BLACK)
+        rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 120))
+        self.surface.blit(text, rect)
+
+        if elapsed_time is not None:
+            time_text = self.font.render(f"Time Used: {elapsed_time}s", True, BLACK)
+            time_rect = time_text.get_rect(center=(WIDTH // 2, HEIGHT // 2-80))
+            self.surface.blit(time_text, time_rect)
+        
+        if powerup is not None:
+            powerup_text = self.font.render(f"Power-up collected: {powerup} each", True, BLACK)
+            powerup_rect = powerup_text.get_rect(center=(WIDTH // 2, HEIGHT // 2-40))
+            self.surface.blit(powerup_text, powerup_rect)
+        
+        if score is not None:
+            score_text = self.font.render(f"Score: {score}", True, BLACK)
+            score_rect = score_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 ))
+            self.surface.blit(score_text, score_rect)
+        if movecount is not None:
+            move_text = self.font.render(f"You moved: {movecount} time", True, BLACK)
+            move_rect = move_text.get_rect(center=(WIDTH // 2, HEIGHT // 2+40))
+            self.surface.blit(move_text, move_rect)
+
+        # Draw Try Again button
+        try_again_button = pygame.Rect(WIDTH // 2 - 100, HEIGHT // 2 + 80, 200, 50)
+        pygame.draw.rect(self.surface, (0, 255, 0), try_again_button)
+        try_again_text = self.font.render("Try Again", True, BLACK)
+        self.surface.blit(try_again_text, try_again_button.move(90, 10))
+        
+
         pygame.display.flip()
 
-    def display_message(self, message):
-        text = self.font.render(message, True, BLACK)
-        rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
-        self.surface.blit(text, rect)
-        pygame.display.flip()
-        pygame.time.wait(2000)
+
+
+
+    def restart_game(self):
+        self.player = Player(position=(0, 0))
+        self.dragon = Dragon(position=(random.randint(0, BOARD_SIZE - 1),
+                                        random.randint(0, BOARD_SIZE - 1)))
+        self.fireballs = []
+        self.fireball_randoms = []
+        self.final_time = []
+        self.start_time = pygame.time.get_ticks()
+        self.game_over = False
+        self.win = False
+        self.powerups_collected = 0
+        self.score = 5000
+        self.move_count = 0
+
+    def handle_intro_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if self.start_button.collidepoint(event.pos):
+                    self.show_intro = False
+                    self.start_time = pygame.time.get_ticks()  # Start game timer
+
 
     def run(self):
         while True:
             self.clock.tick(FPS)
-            if not self.game_over:
+           
+            if self.show_intro:
+                self.handle_intro_events()
+                self.introduction_screen()
+            elif not self.game_over:
                 self.handle_events()
                 self.update_game()
                 self.draw_game()
+            
             else:
+                y = pygame.time.get_ticks()
+                self.final_time.append(y)
                 if self.win:
-                    self.display_message("You Win!")
+                    final_time = (self.final_time[0] - self.start_time) // 1000
+                    self.display_message("You Win!", final_time, self.score,self.powerups_collected,self.move_count)
+                  
                 else:
-                    self.display_message("Game Over!")
-                pygame.quit()
-                sys.exit()
+                    final_time = (self.final_time[0] - self.start_time) // 1000
+                    self.display_message("Game Over!", final_time, self.score,self.powerups_collected,self.move_count)
+                    
+
+                    # Wait for the user to click Try Again button
+                   # self.game_over = True  # Stop game loop when it's over
+
+    
 
 if __name__ == "__main__":
     Game().run()
