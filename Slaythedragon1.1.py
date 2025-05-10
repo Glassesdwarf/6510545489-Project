@@ -237,7 +237,17 @@ class Game:
                 pygame.quit()
                 sys.exit()
             
-            if event.type == pygame.KEYDOWN:
+            if self.game_over:
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_x, mouse_y = pygame.mouse.get_pos()
+                    if (WIDTH // 2 - 100 <= mouse_x <= WIDTH // 2 + 100 and
+                        HEIGHT // 2 + 80 <= mouse_y <= HEIGHT // 2 + 130):
+                        self.restart_game()
+                        self.game_over = False  # <-- ADD THIS LINE
+                        self.final_time.clear() # <-- CLEAR previous final_time
+                        return  # Exit early to avoid extra input handling
+
+            elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
                     dy = -1
                     self.move_count += 1
@@ -250,16 +260,21 @@ class Game:
                 elif event.key == pygame.K_RIGHT:
                     dx = 1
                     self.move_count += 1
-            
-            # Detect Try Again button click
-            if event.type == pygame.MOUSEBUTTONDOWN and self.game_over:
+
+        if dx or dy:
+            self.player.move(dx, dy)
+    
+    def handle_gameover_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_x, mouse_y = pygame.mouse.get_pos()
                 if (WIDTH // 2 - 100 <= mouse_x <= WIDTH // 2 + 100 and
                     HEIGHT // 2 + 80 <= mouse_y <= HEIGHT // 2 + 130):
                     self.restart_game()
 
-        if dx or dy:
-            self.player.move(dx, dy)
 
 
     def update_game(self):
@@ -401,7 +416,8 @@ class Game:
         self.powerups_collected = 0
         self.score = 5000
         self.move_count = 0
-
+        self.show_intro = False
+       
     def handle_intro_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -426,15 +442,21 @@ class Game:
                 self.draw_game()
             
             else:
+                self.handle_gameover_events()
+
+                
                 y = pygame.time.get_ticks()
                 self.final_time.append(y)
+
+                final_time = (self.final_time[0] - self.start_time) // 1000
                 if self.win:
-                    final_time = (self.final_time[0] - self.start_time) // 1000
-                    self.display_message("You Win!", final_time, self.score,self.powerups_collected,self.move_count)
-                  
+                    self.display_message("You Win!", final_time, self.score, self.powerups_collected, self.move_count)
                 else:
-                    final_time = (self.final_time[0] - self.start_time) // 1000
-                    self.display_message("Game Over!", final_time, self.score,self.powerups_collected,self.move_count)
+                    self.display_message("Game Over!", final_time, self.score, self.powerups_collected, self.move_count)
+
+
+                  
+               
                     
 
                     # Wait for the user to click Try Again button
