@@ -267,6 +267,7 @@ class Game:
     def handle_gameover_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                
                 pygame.quit()
                 sys.exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -417,6 +418,7 @@ class Game:
         self.score = 5000
         self.move_count = 0
         self.show_intro = False
+        
        
     def handle_intro_events(self):
         for event in pygame.event.get():
@@ -426,7 +428,7 @@ class Game:
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.start_button.collidepoint(event.pos):
                     self.show_intro = False
-                    self.start_time = pygame.time.get_ticks()  # Start game timer
+                    #self.start_time = pygame.time.get_ticks()  # Start game timer
 
 
     def run(self):
@@ -442,11 +444,14 @@ class Game:
                 self.draw_game()
             
             else:
+                
                 self.handle_gameover_events()
-
+                
                 
                 y = pygame.time.get_ticks()
                 self.final_time.append(y)
+                
+                
 
                 final_time = (self.final_time[0] - self.start_time) // 1000
                 if self.win:
