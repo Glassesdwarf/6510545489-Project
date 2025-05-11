@@ -1,6 +1,6 @@
 # 6510545489-Project
 Slay the dragon
+after installing this program you can start the game by running Slaytbadragon1.1.py
 
-Slaythedragon1.1 is test version of the concept please try running it first before trying main0.5
 
 
