@@ -179,12 +179,15 @@ class Game:
         self.surface.blit(title_text, title_rect)
 
         instructions = [
-            "Use Arrow Keys to move your player (blue square).",
-            "Touch the dragon (orange square) to deal damage.",
+            "Oh No! The dragon have been escaping from the zoo!",
+            "Help the knight punish that bad bad dragon!",
+            "Use Arrow Keys to move the Knight (blue square).",
+            "Touch the dragon (Red square) to deal damage.",
             "Avoid fireballs (orange squares) — instant death.",
-            "Collect green power-ups for 5 seconds of invincibility.",
-            "During invincibility, player flashes colors.",
+            "Collect plant power-ups (green squares) for 5 seconds of invincibility.",
+            "During invincibility, Knight will going full rainbow.",
             "Win by reducing dragon's HP to 0!",
+            "Slay the Dragon!",
             "",
             "Click 'Start Game' to begin."
         ]
@@ -195,7 +198,7 @@ class Game:
             self.surface.blit(line_text, line_rect)
 
         # Draw Start Button
-        self.start_button = pygame.Rect(WIDTH // 2 - 100, HEIGHT // 2 + 180, 200, 50)
+        self.start_button = pygame.Rect(WIDTH // 2 - 100, HEIGHT // 2 + 220, 200, 50)
         pygame.draw.rect(self.surface, (0, 200, 0), self.start_button)
         start_text = self.font.render("Start Game", True, WHITE)
         start_rect = start_text.get_rect(center=self.start_button.center)
@@ -451,9 +454,9 @@ class Game:
 
                 final_time = (self.final_time[0] - self.start_time) // 1000
                 if self.win:
-                    self.display_message("You Win!", final_time, self.score+3000, self.powerups_collected, self.move_count)
+                    self.display_message("You Win! The Dragon have been slained!", final_time, self.score+3000, self.powerups_collected, self.move_count)
                 else:
-                    self.display_message("Game Over!", final_time, self.score, self.powerups_collected, self.move_count)
+                    self.display_message("Game Over! You let the Dragon escape", final_time, self.score, self.powerups_collected, self.move_count)
 
                 self.handle_gameover_events()
 
