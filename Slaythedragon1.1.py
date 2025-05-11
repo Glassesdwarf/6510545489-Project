@@ -418,7 +418,6 @@ class Game:
         self.score = 5000
         self.move_count = 0
         self.show_intro = False
-        
        
     def handle_intro_events(self):
         for event in pygame.event.get():
@@ -443,10 +442,7 @@ class Game:
                 self.update_game()
                 self.draw_game()
             
-            else:
-                
-                self.handle_gameover_events()
-                
+            else:                                
                 
                 y = pygame.time.get_ticks()
                 self.final_time.append(y)
@@ -455,9 +451,11 @@ class Game:
 
                 final_time = (self.final_time[0] - self.start_time) // 1000
                 if self.win:
-                    self.display_message("You Win!", final_time, self.score, self.powerups_collected, self.move_count)
+                    self.display_message("You Win!", final_time, self.score+3000, self.powerups_collected, self.move_count)
                 else:
                     self.display_message("Game Over!", final_time, self.score, self.powerups_collected, self.move_count)
+
+                self.handle_gameover_events()
 
 
                   
