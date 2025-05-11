@@ -68,19 +68,8 @@ Simple Geometric Collision Detection
 
 
 
-
-
-
-
-
-
-
-
-
-
 Statistical Data (Prop Stats)
 ![alt text](image.png)
-
 
 
 
@@ -98,4 +87,15 @@ All the needed data are showing in the game over or game win window status then 
 4.3 Data Analysis Report
 Outline how you will analyze the recorded data. What statistical measures will you use? How will the analysis be presented (e.g., graphs, tables, charts)?
 In a table of data and scatter plot.
+
+from the result it can be conclude that the power up item help win the game the most when player only use 2 power up.
+
+5.project timeline
+
+
+
+
+6. Document version
+Version: 1.2
+Date: 11 May 2025
 
