@@ -38,6 +38,7 @@ The main controller class. Initializes and runs the game loop, manages events, u
 
 
 3.3 Algorithms Involved
+![alt text](<Screenshot 2025-05-11 202604.png>)
 
 
 Technique / Algorithm Name
