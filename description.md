@@ -91,6 +91,7 @@ In a table of data and scatter plot.
 from the result it can be conclude that the power up item help win the game the most when player only use 2 power up.
 
 5.project timeline
+![alt text](image-2.png)
 
 
 
