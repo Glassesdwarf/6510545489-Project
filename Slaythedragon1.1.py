@@ -1,7 +1,7 @@
 import pygame
 import random
 import sys
-
+import time
 # Constants for board size and cell size
 BOARD_SIZE = 25
 CELL_SIZE = 25  
@@ -171,7 +171,8 @@ class Game:
         self.powerup_spawn_time = pygame.time.get_ticks()  # track last spawn time
 
         self.show_intro = True
-    
+        pygame.mixer.init()
+        pygame.mixer.music.load("NyanCatoriginal.mp3")
     def introduction_screen(self):
         self.surface.fill(WHITE)
         title_text = self.font.render("Slay the Dragon!", True, BLACK)
@@ -299,16 +300,22 @@ class Game:
         # Check power-up pickup
         if self.powerup and self.player.position == self.powerup.position:
             print("Power-up collected!")
+            
+            pygame.mixer.music.play()
             self.invincible = True
             self.invincible_timer = pygame.time.get_ticks()  # current time in ms
             self.clock.tick(self.fast_fps)  # temporarily faster FPS
             self.score = max(0, self.score - 500)
             self.powerup = None
             self.powerups_collected += 1
+            
+          
         # Handle invincibility duration
         if self.invincible:
+            
             if pygame.time.get_ticks() - self.invincible_timer >= 5000:
                 self.invincible = False
+                pygame.mixer.music.pause()
                 print("Invincibility ended.")
                 self.clock.tick(self.normal_fps)
 
